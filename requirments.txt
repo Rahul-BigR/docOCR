@@ -1,0 +1,10 @@
+1. TesseractOCR -- for win: https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe
+                -- for linux: sudo apt install tesseract-ocr
+                -- for mac: brew install tesseract
+    (make sure to add the installation folder(custom installation), to the environment variables)
+2. Setup VS Code: make sure the IDE is updated and all the required extentions are available (all basic python and realted extentions).
+3. Install pytesseract, opencv, pillow using -> pip install pytesseract opencv-python-pillow
+4. Finally check all the things are integrated and working properly.
+        check -> tesseract --version
+                 pip --version
+                 pip list (make sure the required libraries are installed).
