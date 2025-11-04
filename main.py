@@ -67,7 +67,7 @@ def enhance_image(image):
 
     return enhanced
 
-def extract_text_trocr(image, device):
+def extract_text_trocr(image, trocr_model, processor, device):
     """Extract text using TrOCR. `device` must be same device used to load the model."""
     # Convert CV2 image to PIL
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -84,7 +84,7 @@ def extract_text_trocr(image, device):
 
     return generated_text.strip()
 
-def run_pipeline(image_path):
+def run_pipeline(image_path, model, trocr_model, processor, DEVICE):
     try:
         image = cv2.imread(image_path)
         if image is None:
@@ -161,7 +161,8 @@ def run_pipeline(image_path):
             cv2.imwrite(crop_path, enhanced_crop)
 
             # Extract text using TrOCR (ensure device variable is available)
-            text = extract_text_trocr(enhanced_crop, DEVICE)
+            text = extract_text_trocr(enhanced_crop, trocr_model, processor, DEVICE)
+
             print(f"✅ {class_name}: {text}")
 
             # Save to text file
