@@ -12,7 +12,8 @@ INPUT_FOLDER = "dataset/cheques"
 CROPS_FOLDER = "detected_fields"
 OCR_FOLDER = "ocr_results"
 JSON_FOLDER = "final_output_json"
-MODEL_PATH = "runs/detect/train3/weights/best.pt"
+MODEL_PATH = "runs/detect/train3/weights/best1.pt"
+
 
 FIELD_CLASSES = ['Cheque_Number', 'Account_Number', 'IFSC_Code', 'Date', 'Amount', 'Payee_Name']
 
@@ -199,7 +200,8 @@ def safe_write_file(file_path, content, mode='w'):
         return False
     return True
 
-def process_all():
+def process_all(model, trocr_model, processor, device):
+    """Process all images in INPUT_FOLDER using the provided models"""
     total_images = len([f for f in os.listdir(INPUT_FOLDER) 
                        if f.lower().endswith((".jpg", ".jpeg", ".png", ".tif"))])
     processed = 0
@@ -209,7 +211,11 @@ def process_all():
         validate_paths()
         for img_file in os.listdir(INPUT_FOLDER):
             if img_file.lower().endswith((".jpg", ".jpeg", ".png", ".tif")):
-                success = run_pipeline(os.path.join(INPUT_FOLDER, img_file))
+                # Pass all required arguments to run_pipeline
+                success = run_pipeline(
+                    os.path.join(INPUT_FOLDER, img_file),
+                    model, trocr_model, processor, device
+                )
                 processed += 1
                 if not success:
                     failed += 1
@@ -221,29 +227,28 @@ def process_all():
 
 def validate_paths():
     """Validate all required paths and files"""
+    # Check MODEL_PATH
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(f"Model file not found: {MODEL_PATH}")
     
-    if not os.path.exists(INPUT_FOLDER):
-        raise FileNotFoundError(f"Input folder not found: {INPUT_FOLDER}")
+    # Create input/output directories if they don't exist
+    os.makedirs(INPUT_FOLDER, exist_ok=True)
+    os.makedirs(CROPS_FOLDER, exist_ok=True)
+    os.makedirs(OCR_FOLDER, exist_ok=True)
+    os.makedirs(JSON_FOLDER, exist_ok=True)
     
-    if not os.listdir(INPUT_FOLDER):
-        raise ValueError(f"Input folder is empty: {INPUT_FOLDER}")
+    # Check if input folder has any valid images
+    valid_extensions = ('.jpg', '.jpeg', '.png', '.tif')
+    if not any(f.lower().endswith(valid_extensions) for f in os.listdir(INPUT_FOLDER)):
+        raise ValueError(f"No valid images found in input folder: {INPUT_FOLDER}")
 
 def cleanup():
     """Clean up resources"""
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
+    # Add any other cleanup steps here
 
-# remove global initialization at top:
-# model, trocr_model, processor = initialize_models()
-
-# declare globals
-model = None
-trocr_model = None
-processor = None
-DEVICE = None
-
+# Update the main block to pass models to process_all
 if __name__ == "__main__":
     try:
         validate_paths()  # check paths before loading models
@@ -251,7 +256,8 @@ if __name__ == "__main__":
         # initialize models after checks so errors are clearer
         model, trocr_model, processor, DEVICE = initialize_models()
 
-        process_all()
+        # Pass all required arguments to process_all
+        process_all(model, trocr_model, processor, DEVICE)
         print("🎯 All images processed.")
     except Exception as e:
         print(f"❌ Program failed: {str(e)}")
