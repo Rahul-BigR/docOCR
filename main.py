@@ -13,7 +13,7 @@ INPUT_FOLDER = "dataset/cheques"
 CROPS_FOLDER = "detected_fields"
 OCR_FOLDER = "ocr_results"
 JSON_FOLDER = "final_output_json"
-MODEL_PATH = "runs/detect/train3/weights/best.pt"
+MODEL_PATH = "best.pt"
 
 FIELD_CLASSES = ['Cheque_Number', 'Account_Number', 'IFSC_Code',  'Amount', 'Date', 'Payee_Name']
 
