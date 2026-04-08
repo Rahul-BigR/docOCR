@@ -4,3 +4,4 @@ final_output_json
 ocr_results
 users.json
 __pycache__
+.env
