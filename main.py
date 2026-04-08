@@ -6,15 +6,19 @@ import torch
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from PIL import Image
 from ultralytics import YOLO
+from post_processing import post_process
 
 # Paths
 INPUT_FOLDER = "dataset/cheques/test"
 CROPS_FOLDER = "detected_fields"
 OCR_FOLDER = "ocr_results"
 JSON_FOLDER = "final_output_json"
-MODEL_PATH = "runs/best.pt"
+MODEL_PATH = "best.pt"
 
-FIELD_CLASSES = ['Cheque_Number', 'Account_Number', 'IFSC_Code', 'Amount', 'Date', 'Payee_Name']
+FIELD_CLASSES = ['Cheque_Number', 'Account_Number', 'IFSC_Code',  'Amount', 'Date', 'Payee_Name']
+
+import re
+
 
 # Initialize models with proper device handling
 def initialize_models():
@@ -67,6 +71,31 @@ def enhance_image(image):
 
     return enhanced
 
+def enhance_micr(image):
+    """
+    Specialised preprocessing for MICR-encoded fields (cheque number).
+    MICR digits are printed in a high-contrast magnetic ink font -- aggressive
+    binarisation and upscaling help TrOCR read them more completely.
+    """
+    # 4x upscale for more pixels per digit
+    image = cv2.resize(image, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Sharpen before thresholding
+    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+    gray = cv2.filter2D(gray, -1, kernel)
+
+    # Otsu binarisation -- best for MICR high-contrast ink
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Small dilation to reconnect broken strokes in MICR font
+    kernel_d = np.ones((2, 2), np.uint8)
+    binary = cv2.dilate(binary, kernel_d, iterations=1)
+
+    return cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR)
+
 def extract_text_trocr(image, trocr_model, processor, device):
     """Extract text using TrOCR. `device` must be same device used to load the model."""
     # Convert CV2 image to PIL
@@ -79,7 +108,12 @@ def extract_text_trocr(image, trocr_model, processor, device):
 
     # Generate text in no_grad for memory/speed
     with torch.no_grad():
-        generated_ids = trocr_model.generate(pixel_values, max_length=256, num_beams=4)
+        generated_ids = trocr_model.generate(
+            pixel_values,
+            max_length=64,
+            num_beams=2
+        )
+        # generated_ids = trocr_model.generate(pixel_values, max_length=256, num_beams=4)
         generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
     return generated_text.strip()
@@ -100,7 +134,8 @@ def run_pipeline(image_path, model, trocr_model, processor, DEVICE):
         if detections is None or len(detections) == 0:
             print(f"⚠️ No boxes detected for {image_path}")
             return True
-
+        detections = sorted(detections, key=lambda x: x.xyxy[0][0])
+        # detections = sorted(detections, key=lambda x: x.xyxy[0][1])
         # Ensure output dirs exist
         os.makedirs(CROPS_FOLDER, exist_ok=True)
         os.makedirs(OCR_FOLDER, exist_ok=True)
@@ -143,10 +178,20 @@ def run_pipeline(image_path, model, trocr_model, processor, DEVICE):
             except Exception:
                 continue
 
-            # clamp to image bounds
+
+            # clamp to image bounds + padding
+            padding = 3
             h, w = image.shape[:2]
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
+
+            x1 = max(0, x1 - padding)
+            y1 = max(0, y1 - padding)
+            x2 = min(w, x2 + padding)
+            y2 = min(h, y2 + padding)
+
+            # # clamp to image bounds
+            # h, w = image.shape[:2]
+            # x1, y1 = max(0, x1), max(0, y1)
+            # x2, y2 = min(w, x2), min(h, y2)
             if x2 <= x1 or y2 <= y1:
                 continue
 
@@ -154,7 +199,10 @@ def run_pipeline(image_path, model, trocr_model, processor, DEVICE):
             if cropped is None or cropped.size == 0:
                 continue
 
-            enhanced_crop = enhance_image(cropped)
+            if class_name == 'Cheque_Number':
+                enhanced_crop = enhance_micr(cropped)
+            else:
+                enhanced_crop = enhance_image(cropped)
 
             # Save cropped and enhanced image
             crop_path = os.path.join(CROPS_FOLDER, f"{image_name}_{class_name}.jpg")
@@ -163,19 +211,29 @@ def run_pipeline(image_path, model, trocr_model, processor, DEVICE):
             # Extract text using TrOCR (ensure device variable is available)
             text = extract_text_trocr(enhanced_crop, trocr_model, processor, DEVICE)
 
+            # Apply post-processing
+            text = post_process(class_name, text)
+
             print(f"✅ {class_name}: {text}")
 
             # Save to text file
             ocr_txt_path = os.path.join(OCR_FOLDER, f"{image_name}_{class_name}.txt")
             safe_write_file(ocr_txt_path, text)
 
-            output_json[class_name.lower()] = text
+            output_json[class_name.lower()] = {
+                "text": text,
+                "y": y1
+            }
 
         # Save to final JSON
         json_path = os.path.join(JSON_FOLDER, f"{image_name}.json")
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
+
+        # remove position info before saving
+        clean_json = {k:v["text"] for k,v in output_json.items()}
+
         with open(json_path, 'w', encoding='utf-8') as jf:
-            json.dump(output_json, jf, indent=4)
+            json.dump(clean_json, jf, indent=4)
 
         print(f"✅ Processed: {image_path}")
         return True
@@ -199,9 +257,8 @@ def safe_write_file(file_path, content, mode='w'):
         return False
     return True
 
-def process_all():
-    global model, trocr_model, processor, DEVICE
-    
+def process_all(model, trocr_model, processor, device):
+    """Process all images in INPUT_FOLDER using the provided models"""
     total_images = len([f for f in os.listdir(INPUT_FOLDER) 
                        if f.lower().endswith((".jpg", ".jpeg", ".png", ".tif"))])
     processed = 0
@@ -211,7 +268,11 @@ def process_all():
         validate_paths()
         for img_file in os.listdir(INPUT_FOLDER):
             if img_file.lower().endswith((".jpg", ".jpeg", ".png", ".tif")):
-                success = run_pipeline(os.path.join(INPUT_FOLDER, img_file), model, trocr_model, processor, DEVICE)
+                # Pass all required arguments to run_pipeline
+                success = run_pipeline(
+                    os.path.join(INPUT_FOLDER, img_file),
+                    model, trocr_model, processor, device
+                )
                 processed += 1
                 if not success:
                     failed += 1
@@ -223,29 +284,28 @@ def process_all():
 
 def validate_paths():
     """Validate all required paths and files"""
+    # Check MODEL_PATH
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(f"Model file not found: {MODEL_PATH}")
     
-    if not os.path.exists(INPUT_FOLDER):
-        raise FileNotFoundError(f"Input folder not found: {INPUT_FOLDER}")
+    # Create input/output directories if they don't exist
+    os.makedirs(INPUT_FOLDER, exist_ok=True)
+    os.makedirs(CROPS_FOLDER, exist_ok=True)
+    os.makedirs(OCR_FOLDER, exist_ok=True)
+    os.makedirs(JSON_FOLDER, exist_ok=True)
     
-    if not os.listdir(INPUT_FOLDER):
-        raise ValueError(f"Input folder is empty: {INPUT_FOLDER}")
+    # Check if input folder has any valid images
+    valid_extensions = ('.jpg', '.jpeg', '.png', '.tif')
+    if not any(f.lower().endswith(valid_extensions) for f in os.listdir(INPUT_FOLDER)):
+        raise ValueError(f"No valid images found in input folder: {INPUT_FOLDER}")
 
 def cleanup():
     """Clean up resources"""
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
+    # Add any other cleanup steps here
 
-# remove global initialization at top:
-# model, trocr_model, processor = initialize_models()
-
-# declare globals
-model = None
-trocr_model = None
-processor = None
-DEVICE = None
-
+# Update the main block to pass models to process_all
 if __name__ == "__main__":
     try:
         validate_paths()  # check paths before loading models
@@ -253,7 +313,8 @@ if __name__ == "__main__":
         # initialize models after checks so errors are clearer
         model, trocr_model, processor, DEVICE = initialize_models()
 
-        process_all()
+        # Pass all required arguments to process_all
+        process_all(model, trocr_model, processor, DEVICE)
         print("🎯 All images processed.")
     except Exception as e:
         print(f"❌ Program failed: {str(e)}")
