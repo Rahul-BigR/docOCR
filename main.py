@@ -8,13 +8,13 @@ from PIL import Image
 from ultralytics import YOLO
 
 # Paths
-INPUT_FOLDER = "dataset/cheques"
+INPUT_FOLDER = "dataset/cheques/test"
 CROPS_FOLDER = "detected_fields"
 OCR_FOLDER = "ocr_results"
 JSON_FOLDER = "final_output_json"
-MODEL_PATH = "runs/detect/train3/weights/best.pt"
+MODEL_PATH = "runs/best.pt"
 
-FIELD_CLASSES = ['Cheque_Number', 'Account_Number', 'IFSC_Code', 'Date', 'Amount', 'Payee_Name']
+FIELD_CLASSES = ['Cheque_Number', 'Account_Number', 'IFSC_Code', 'Amount', 'Date', 'Payee_Name']
 
 # Initialize models with proper device handling
 def initialize_models():
@@ -200,6 +200,8 @@ def safe_write_file(file_path, content, mode='w'):
     return True
 
 def process_all():
+    global model, trocr_model, processor, DEVICE
+    
     total_images = len([f for f in os.listdir(INPUT_FOLDER) 
                        if f.lower().endswith((".jpg", ".jpeg", ".png", ".tif"))])
     processed = 0
@@ -209,7 +211,7 @@ def process_all():
         validate_paths()
         for img_file in os.listdir(INPUT_FOLDER):
             if img_file.lower().endswith((".jpg", ".jpeg", ".png", ".tif")):
-                success = run_pipeline(os.path.join(INPUT_FOLDER, img_file))
+                success = run_pipeline(os.path.join(INPUT_FOLDER, img_file), model, trocr_model, processor, DEVICE)
                 processed += 1
                 if not success:
                     failed += 1
