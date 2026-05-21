@@ -1,0 +1,100 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-base: #07070f;
+  --bg-nav: rgba(7,7,15,0.9);
+  --bg-card: #0a0a18;
+  --bg-card2: #0d0d1e;
+  --bg-card3: #101028;
+  --border: rgba(255,255,255,0.06);
+  --border-bright: rgba(255,255,255,0.1);
+  /* Purple / green palette */
+  --purple: #8b5cf6;
+  --purple-light: #a78bfa;
+  --purple-dark: #7c3aed;
+  --green: #22c55e;
+  --green-light: #4ade80;
+  --cyan: #06b6d4;
+  --cyan-light: #22d3ee;
+  --amber: #f59e0b;
+  --rose: #f43f5e;
+  --glow-purple: rgba(139,92,246,0.3);
+  --glow-green: rgba(34,197,94,0.25);
+  --text-primary: #f1f5f9;
+  --text-secondary: #9ca3af;
+  --text-muted: #374151;
+  /* Legacy compat aliases */
+  --blue: #8b5cf6;
+  --blue-light: #a78bfa;
+  --indigo: #8b5cf6;
+  --indigo-light: #a78bfa;
+  --accent: #8b5cf6;
+  --border-light: rgba(255,255,255,0.08);
+}
+
+html, body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+
+button { font-family: inherit; cursor: pointer; }
+input, textarea { font-family: inherit; }
+a { text-decoration: none; color: inherit; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Gradient text ── */
+.grad { background: linear-gradient(135deg,#a78bfa,#8b5cf6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.grad-green { background: linear-gradient(135deg,#4ade80,#22c55e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.grad-purple { background: linear-gradient(135deg,#a78bfa,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 24px; background: linear-gradient(135deg,#7c3aed,#8b5cf6);
+  border: none; border-radius: 10px; color: white; font-size: 0.9rem;
+  font-weight: 700; cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(139,92,246,0.4); white-space: nowrap; font-family: inherit;
+}
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(139,92,246,0.55); }
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px; background: transparent;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+  color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit;
+}
+.btn-outline:hover { border-color: var(--purple); color: var(--purple-light); background: rgba(139,92,246,0.07); }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; }
+.badge-blue   { background: rgba(139,92,246,0.1);  border: 1px solid rgba(139,92,246,0.22); color: #c4b5fd; }
+.badge-purple { background: rgba(139,92,246,0.1);  border: 1px solid rgba(139,92,246,0.22); color: #c4b5fd; }
+.badge-green  { background: rgba(34,197,94,0.08);  border: 1px solid rgba(34,197,94,0.2);  color: #86efac; }
+.badge-cyan   { background: rgba(6,182,212,0.08);  border: 1px solid rgba(6,182,212,0.2);  color: #67e8f9; }
+.badge-amber  { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d; }
+
+/* ── Glass card ── */
+.glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 16px; }
+
+/* ── Spinner ── */
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.25); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes pulse-ring { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }

@@ -13,7 +13,7 @@ def fix_common_errors(text):
         "I": "1",
         "L": "1",
         "B": "8",
-        "S": "5",
+        # "S": "5",
         "Z": "2"
     }
 
@@ -30,10 +30,49 @@ def fix_common_errors(text):
 # -----------------------------
 def correct_ifsc(text):
 
-    text = fix_common_errors(text)
-    text = text.replace(" ", "")
+    if not text:
+        return text
 
-    match = re.search(r"[A-Z]{4}0[A-Z0-9]{6}", text)
+    text = text.upper().replace(" ", "")
+
+    chars = list(text)
+
+    # First 4 chars should be letters
+    for i in range(min(4, len(chars))):
+
+        if chars[i] == '5':
+            chars[i] = 'S'
+
+        elif chars[i] == '8':
+            chars[i] = 'B'
+
+        elif chars[i] == '0':
+            chars[i] = 'O'
+
+        elif chars[i] == '1':
+            chars[i] = 'I'
+
+    # Remaining chars should be numeric/alphanumeric
+    for i in range(4, len(chars)):
+
+        if chars[i] == 'O':
+            chars[i] = '0'
+
+        elif chars[i] == 'I':
+            chars[i] = '1'
+
+        elif chars[i] == 'L':
+            chars[i] = '1'
+
+        elif chars[i] == 'Z':
+            chars[i] = '2'
+
+    text = ''.join(chars)
+
+    # IFSC length = 11
+    text = text[:11]
+
+    match = re.search(r"[A-Z]{4}[0-9A-Z]{7}", text)
 
     if match:
         return match.group()

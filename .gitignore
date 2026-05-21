@@ -5,3 +5,16 @@ ocr_results
 users.json
 __pycache__
 .env
+<<<<<<< HEAD
+=======
+venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+runs/
+ocr_results/
+final_output_json/
+detected_fields/
+.vscode/
+>>>>>>> kumud
