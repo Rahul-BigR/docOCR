@@ -309,7 +309,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 ### Built by
 
 <a href="https://github.com/Kumud-hasija">Kumud Hasija</a> •
-<a href="https://github.com/Rahul-BigR">Rahul Rao</a>
+<a href="https://github.com/Rahul-BigR">Rahul Rao</a> •
+<a href="https://github.com/Vaibhav0410">Vaibhav Sheoran</a>
 
 *Building AI products that make financial workflows effortless.*
 
@@ -317,6 +318,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 
 [![Kumud](https://img.shields.io/badge/GitHub-Kumud--hasija-181717?style=flat-square&logo=github)](https://github.com/Kumud-hasija)
 [![Rahul](https://img.shields.io/badge/GitHub-Rahul--BigR-181717?style=flat-square&logo=github)](https://github.com/Rahul-BigR)
+[![Vaibhav](https://img.shields.io/badge/GitHub-Vaibhav--Sheoran-181717?style=flat-square&logo=github)](https://github.com/Vaibhav0410)
+
+
 
 </div>
 
